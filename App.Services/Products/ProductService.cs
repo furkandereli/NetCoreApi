@@ -18,7 +18,7 @@ public class ProductService(IProductRepository productRepository, IUnitOfWork un
             Data = productsAsDto
         };
     }
-    
+
     public async Task<ServiceResult<List<ProductDto>>> GetAllListAsync()
     {
         var products = await productRepository.GetAll().ToListAsync();
@@ -26,7 +26,12 @@ public class ProductService(IProductRepository productRepository, IUnitOfWork un
 
         return ServiceResult<List<ProductDto>>.Success(productsAsDto);
     }
-
+    public async Task<ServiceResult<List<ProductDto>>> GetPagedAllListAsync(int pageNumber, int pageSize)
+    {
+        var products = await productRepository.GetAll().Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
+        var productsAsDto = products.Select(p => new ProductDto(p.Id, p.Name, p.Price, p.Stock)).ToList();
+        return ServiceResult<List<ProductDto>>.Success(productsAsDto);
+    }
     public async Task<ServiceResult<ProductDto?>> GetByIdAsync(int id)
     {
         var product = await productRepository.GetByIdAsync(id);
@@ -53,7 +58,7 @@ public class ProductService(IProductRepository productRepository, IUnitOfWork un
         await productRepository.AddAsync(product);
         await unitOfWork.SaveChangesAsync();
 
-        return ServiceResult<CreateProductResponse>.Success(new CreateProductResponse(product.Id));
+        return ServiceResult<CreateProductResponse>.SuccessAsCreated(new CreateProductResponse(product.Id), $"api/products/{product.Id}");
     }
 
     public async Task<ServiceResult> UpdateAsync(int id, UpdateProductRequest request)
@@ -70,19 +75,19 @@ public class ProductService(IProductRepository productRepository, IUnitOfWork un
         productRepository.Update(product);
         await unitOfWork.SaveChangesAsync();
 
-        return ServiceResult.Success();
+        return ServiceResult.Success(HttpStatusCode.NoContent);
     }
 
     public async Task<ServiceResult> DeleteAsync(int id)
     {
         var product = await productRepository.GetByIdAsync(id);
-        
+
         if (product is null)
             return ServiceResult.Fail("Product not found", HttpStatusCode.NotFound);
 
         productRepository.Delete(product);
         await unitOfWork.SaveChangesAsync();
 
-        return ServiceResult.Success();
+        return ServiceResult.Success(HttpStatusCode.NoContent);
     }
 }

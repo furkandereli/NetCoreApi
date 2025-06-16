@@ -18,7 +18,6 @@ public class ProductService(IProductRepository productRepository, IUnitOfWork un
             Data = productsAsDto
         };
     }
-
     public async Task<ServiceResult<List<ProductDto>>> GetAllListAsync()
     {
         var products = await productRepository.GetAll().ToListAsync();
@@ -45,9 +44,13 @@ public class ProductService(IProductRepository productRepository, IUnitOfWork un
 
         return ServiceResult<ProductDto>.Success(productsAsDto)!;
     }
-
     public async Task<ServiceResult<CreateProductResponse>> CreateAsync(CreateProductRequest request)
     {
+        var anyProduct = await productRepository.Where(x => x.Name == request.Name).AnyAsync();
+
+        if (anyProduct)
+            return ServiceResult<CreateProductResponse>.Fail("Ürün ismi veritabanında bulunmaktadır.", HttpStatusCode.BadRequest);
+
         var product = new Product
         {
             Name = request.Name,
@@ -60,7 +63,6 @@ public class ProductService(IProductRepository productRepository, IUnitOfWork un
 
         return ServiceResult<CreateProductResponse>.SuccessAsCreated(new CreateProductResponse(product.Id), $"api/products/{product.Id}");
     }
-
     public async Task<ServiceResult> UpdateAsync(int id, UpdateProductRequest request)
     {
         var product = await productRepository.GetByIdAsync(id);
@@ -77,7 +79,6 @@ public class ProductService(IProductRepository productRepository, IUnitOfWork un
 
         return ServiceResult.Success(HttpStatusCode.NoContent);
     }
-
     public async Task<ServiceResult> UpdateStockAsync(UpdateProductStockRequest request)
     {
         var product = await productRepository.GetByIdAsync(request.ProductId);
@@ -91,7 +92,6 @@ public class ProductService(IProductRepository productRepository, IUnitOfWork un
 
         return ServiceResult.Success(HttpStatusCode.NoContent);
     }
-
     public async Task<ServiceResult> DeleteAsync(int id)
     {
         var product = await productRepository.GetByIdAsync(id);

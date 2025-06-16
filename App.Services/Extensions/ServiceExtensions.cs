@@ -1,4 +1,5 @@
-﻿using App.Services.Products;
+﻿using App.Services.ExceptionHandler;
+using App.Services.Products;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.Extensions.Configuration;
@@ -15,6 +16,9 @@ public static class ServiceExtensions
         services.AddFluentValidationAutoValidation();
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
         services.AddAutoMapper(Assembly.GetExecutingAssembly());
+
+        services.AddExceptionHandler<CriticalExceptionHandler>();
+        services.AddExceptionHandler<GlobalExceptionHandler>();
 
         return services;
     }

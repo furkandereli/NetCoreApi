@@ -1,5 +1,6 @@
 ﻿using App.Repositories;
 using App.Repositories.Products;
+using App.Services.ExceptionHandler;
 using App.Services.Products.Create;
 using App.Services.Products.Update;
 using AutoMapper;

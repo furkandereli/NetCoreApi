@@ -16,7 +16,7 @@ public class ProductService(IProductRepository productRepository, IUnitOfWork un
     {
         var products = await productRepository.GetTopPriceProductsAsync(count);
 
-        var productsAsDto = products.Select(p => new ProductDto(p.Id, p.Name, p.Price, p.Stock)).ToList();
+        var productsAsDto = mapper.Map<List<ProductDto>>(products);
 
         return new ServiceResult<List<ProductDto>>()
         {
@@ -42,7 +42,7 @@ public class ProductService(IProductRepository productRepository, IUnitOfWork un
 
         if (product is null)
         {
-            return ServiceResult<ProductDto?>.Fail("Product not found", HttpStatusCode.NotFound);
+            return ServiceResult<ProductDto?>.Fail("Ürün bulunamadı", HttpStatusCode.NotFound);
         }
 
         var productsAsDto = mapper.Map<ProductDto>(product);
@@ -56,12 +56,7 @@ public class ProductService(IProductRepository productRepository, IUnitOfWork un
         if (isProductNameExist)
             return ServiceResult<CreateProductResponse>.Fail("Ürün ismi veritabanında bulunmaktadır.", HttpStatusCode.BadRequest);
 
-        var product = new Product
-        {
-            Name = request.Name,
-            Price = request.Price,
-            Stock = request.Stock
-        };
+        var product = mapper.Map<Product>(request);
 
         await productRepository.AddAsync(product);
         await unitOfWork.SaveChangesAsync();
@@ -80,9 +75,7 @@ public class ProductService(IProductRepository productRepository, IUnitOfWork un
         if (isProductNameExist)
             return ServiceResult.Fail("Ürün ismi veritabanında bulunmaktadır.", HttpStatusCode.BadRequest);
 
-        product.Name = request.Name;
-        product.Price = request.Price;
-        product.Stock = request.Stock;
+        product = mapper.Map(request, product);
 
         productRepository.Update(product);
         await unitOfWork.SaveChangesAsync();

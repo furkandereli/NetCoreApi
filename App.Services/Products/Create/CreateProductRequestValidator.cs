@@ -22,6 +22,9 @@ public class CreateProductRequestValidator : AbstractValidator<CreateProductRequ
 
         RuleFor(x => x.Stock)
             .InclusiveBetween(1, 100).WithMessage("Stok adeti 1 ile 100 arasında olmalıdır.");
+
+        RuleFor(x => x.CategoryId)
+            .GreaterThan(0).WithMessage("Kategori Id 0dan büyük olmalıdır.");
     }
 
     //private async Task<bool> MustUniqueProductNameAsync(string name, CancellationToken cancellationToken)

@@ -1,6 +1,5 @@
 ﻿using App.Repositories;
 using App.Repositories.Products;
-using App.Services.ExceptionHandler;
 using App.Services.Products.Create;
 using App.Services.Products.Update;
 using App.Services.Products.UpdateStock;
@@ -63,25 +62,23 @@ public class ProductService(IProductRepository productRepository, IUnitOfWork un
 
         return ServiceResult<CreateProductResponse>.SuccessAsCreated(new CreateProductResponse(product.Id), $"api/products/{product.Id}");
     }
+
     public async Task<ServiceResult> UpdateAsync(int id, UpdateProductRequest request)
     {
-        var product = await productRepository.GetByIdAsync(id);
-
-        if (product is null)
-            return ServiceResult.Fail("Product not found", HttpStatusCode.NotFound);
-
-        var isProductNameExist = await productRepository.Where(x => x.Name == request.Name && x.Id != product.Id).AnyAsync();
+        var isProductNameExist = await productRepository.Where(x => x.Name == request.Name && x.Id != id).AnyAsync();
 
         if (isProductNameExist)
             return ServiceResult.Fail("Ürün ismi veritabanında bulunmaktadır.", HttpStatusCode.BadRequest);
 
-        product = mapper.Map(request, product);
+        var product = mapper.Map<Product>(request);
+        product.Id = id;
 
         productRepository.Update(product);
         await unitOfWork.SaveChangesAsync();
 
         return ServiceResult.Success(HttpStatusCode.NoContent);
     }
+
     public async Task<ServiceResult> UpdateStockAsync(UpdateProductStockRequest request)
     {
         var product = await productRepository.GetByIdAsync(request.ProductId);
@@ -95,14 +92,12 @@ public class ProductService(IProductRepository productRepository, IUnitOfWork un
 
         return ServiceResult.Success(HttpStatusCode.NoContent);
     }
+
     public async Task<ServiceResult> DeleteAsync(int id)
     {
         var product = await productRepository.GetByIdAsync(id);
 
-        if (product is null)
-            return ServiceResult.Fail("Product not found", HttpStatusCode.NotFound);
-
-        productRepository.Delete(product);
+        productRepository.Delete(product!);
         await unitOfWork.SaveChangesAsync();
 
         return ServiceResult.Success(HttpStatusCode.NoContent);

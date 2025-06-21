@@ -2,6 +2,8 @@ using App.Persistence.Extensions;
 using App.Application.Extensions;
 using CleanApp.API.Filters;
 using CleanApp.API.ExceptionHandler;
+using App.Application.Contracts.Caching;
+using App.Caching;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +21,9 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddRepositories(builder.Configuration)
                 .AddServices(builder.Configuration);
+
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<ICacheService, CacheService>();
 
 builder.Services.AddScoped(typeof(NotFoundFilter<,>));
 

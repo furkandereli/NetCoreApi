@@ -1,4 +1,5 @@
-﻿using App.Application.Contracts.Persistence;
+﻿using App.Application.Contracts.Caching;
+using App.Application.Contracts.Persistence;
 using App.Application.Features.Products.Create;
 using App.Application.Features.Products.Dto;
 using App.Application.Features.Products.Update;
@@ -9,8 +10,9 @@ using System.Net;
 
 namespace App.Application.Features.Products;
 
-public class ProductService(IProductRepository productRepository, IUnitOfWork unitOfWork, IMapper mapper) : IProductService
+public class ProductService(IProductRepository productRepository, IUnitOfWork unitOfWork, IMapper mapper, ICacheService cacheService) : IProductService
 {
+    private const string productListCacheKey = "ProductListCacheKey";
     public async Task<ServiceResult<List<ProductDto>>> GetTopPriceProductsAsync(int count)
     {
         var products = await productRepository.GetTopPriceProductsAsync(count);
@@ -22,19 +24,29 @@ public class ProductService(IProductRepository productRepository, IUnitOfWork un
             Data = productsAsDto
         };
     }
+
     public async Task<ServiceResult<List<ProductDto>>> GetAllListAsync()
     {
+        var productListAsCached = await cacheService.GetAsync<List<ProductDto>>(productListCacheKey);
+
+        if (productListAsCached is not null)
+            return ServiceResult<List<ProductDto>>.Success(productListAsCached);
+
         var products = await productRepository.GetAllAsync();
         var productsAsDto = mapper.Map<List<ProductDto>>(products);
 
+        await cacheService.AddAsync(productListCacheKey, productsAsDto, TimeSpan.FromMinutes(1));
+
         return ServiceResult<List<ProductDto>>.Success(productsAsDto);
     }
+
     public async Task<ServiceResult<List<ProductDto>>> GetPagedAllListAsync(int pageNumber, int pageSize)
     {
         var products = await productRepository.GetAllPagedAsync(pageNumber, pageSize);
         var productsAsDto = mapper.Map<List<ProductDto>>(products);
         return ServiceResult<List<ProductDto>>.Success(productsAsDto);
     }
+
     public async Task<ServiceResult<ProductDto?>> GetByIdAsync(int id)
     {
         var product = await productRepository.GetByIdAsync(id);
@@ -48,6 +60,7 @@ public class ProductService(IProductRepository productRepository, IUnitOfWork un
 
         return ServiceResult<ProductDto>.Success(productsAsDto)!;
     }
+
     public async Task<ServiceResult<CreateProductResponse>> CreateAsync(CreateProductRequest request)
     {
         var isProductNameExist = await productRepository.AnyAsync(x => x.Name == request.Name);
